@@ -1,9 +1,8 @@
-# lock
+# Power monitor
 
-Wifi enabled door lock that can be controlled via either MQTT or HTTP.
-
-## Video:
-[![Alt text](https://img.youtube.com/vi/oReezruJR1E/0.jpg)](https://www.youtube.com/watch?v=oReezruJR1E)
+WiFi and MQTT enabled home energy monitor.
+Allows monitoring of the apparent power consumption of a household.
+The system also features a DHT22 temperature and humidity sensor as well as the ability to get OTA updates.
 
 ## Schematic
 ### Main board
