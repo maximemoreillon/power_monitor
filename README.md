@@ -4,6 +4,12 @@ WiFi and MQTT enabled home energy monitor.
 Allows monitoring of the apparent power consumption of a household.
 The system also features a DHT22 temperature and humidity sensor as well as the ability to get OTA updates.
 
+## Parts
+
+* Wemos D1 mini
+* YHDC SCT-013-000 current transformer
+* DHT22 temperature and humidity sensor
+
 ## Schematic
 ### Main board
 ![alt text](https://moreillon.duckdns.org/projects/iot/images/power_schematic.png)
