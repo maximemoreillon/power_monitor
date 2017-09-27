@@ -35,7 +35,7 @@ Ticker MQTT_reconnect_timer;
 EnergyMonitor emon1;
 #define POWER_READ_PERIOD 30000 // [ms] = 30 seconds
 #define POWER_PUBLISH_PERIOD 120000 // [ms] = 2 minutes
-#define MAINS_VOLTAGE = 100.00 // [V]
+#define MAINS_VOLTAGE 100.00 // [V]
 float apparent_power;
 long last_power_read_time, last_power_publish_time;
 
