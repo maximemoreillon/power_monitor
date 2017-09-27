@@ -24,7 +24,6 @@ Ticker MQTT_reconnect_timer;
 #define MQTT_PORT 1883
 #define MQTT_POWER_STATUS_TOPIC "power/status"
 #define MQTT_DHT_STATUS_TOPIC "dht/bathroom/status"
-#define MQTT_DEBUG_TOPIC "power/debug"
 #define MQTT_QOS 1
 #define MQTT_RETAIN true
 
@@ -50,8 +49,7 @@ float DHT_temperature = 0;
 float DHT_humidity = 0;
 
 
-void setup()
-{
+void setup() {
   // Mandatory initial delay
   delay(10);
 
@@ -69,18 +67,8 @@ void setup()
   wifi_connect();
 }
 
-void loop()
-{
+void loop() {
   ArduinoOTA.handle();
   DHT_read();
   apparent_power_read();
- 
-  // Debugging
-  static boolean debugged;
-  if (millis() > 10000 && !debugged) {
-    debugged = true;
-    Serial.println("debugging");
-    MQTT_client.publish(MQTT_DEBUG_TOPIC, MQTT_QOS, MQTT_RETAIN, "ON");
-    MQTT_client.publish(MQTT_DEBUG_TOPIC, MQTT_QOS, MQTT_RETAIN, "OFF");
-  }
 }
