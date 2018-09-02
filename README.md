@@ -20,12 +20,12 @@ The system also features a DHT22 temperature and humidity sensor as well as the 
 
 ### Schematic
 #### Main board
-![alt text](https://moreillon.duckdns.org/projects/iot/images/power_schematic.png)
+![alt text](http://maximemoreillon.com/images/projects/iot/power/power_schematic.png)
 
 Note: the DS18B20 temperature sensor has been replaced with a DHT 22 temperature and humidity sensor.
 
 #### CT sensor breakout board
-![alt text](https://moreillon.duckdns.org/projects/iot/images/power_breakout_schematic.png)
+![alt text](http://maximemoreillon.com/images/projects/iot/power/power_breakout_schematic.png)
 
 
 
