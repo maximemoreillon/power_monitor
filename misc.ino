@@ -46,7 +46,6 @@ void DHT_read(){
       JsonObject& root = jsonBuffer.createObject();
       root["temperature"] = (String) DHT_temperature;
       root["humidity"] = (String) DHT_humidity;
-      root["uptime"] = (String) (now/1000);
       char data[200];
       root.printTo(data, root.measureLength() + 1);
       MQTT_client.publish(MQTT_DHT_STATUS_TOPIC, MQTT_QOS, MQTT_RETAIN, data);
@@ -80,4 +79,3 @@ void apparent_power_read(){
     MQTT_client.publish(MQTT_POWER_STATUS_TOPIC, MQTT_QOS, MQTT_RETAIN, String(apparent_power).c_str());
   }
 }
-
