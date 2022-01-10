@@ -1,61 +1,137 @@
 /*
- * POWER MONITOR
+ * POWER MONITOR SPLIT PHASE
  * Maxime MOREILLON
  * 
- * Board type: Wemos D1 Mini
+ * Board type: ESP32 DEv Board
  * 
  */
 
 // Libraries
-#include <ESP8266WiFi.h> // Main ESP8266 library
-#include <ArduinoOTA.h> // OTA update library
-#include <WiFiUdp.h> // Required for OTA
-#include <AsyncMqttClient.h> // MQTT library
-#include <Ticker.h> // Used when reconecting MQTT upon wifi drop
-#include <DHT.h>
-#include "EmonLib.h" // Energy monitor
+#include <WiFi.h>
+#include <WiFiClient.h> 
+#include <WebSocketsServer.h>
 #include <ArduinoJson.h>
+#include <WebServer.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include <PubSubClient.h>
 
 #include "credentials.h";
 
+#define HOSTNAME "currentMeasurement"
 
-// Wifi
-WiFiEventHandler wifi_connect_handler;
-WiFiEventHandler wifi_disconnect_handler;
-Ticker wifi_reconnect_timer;
-#define HOSTNAME "powerMonitor"
+// Pin mapping
+#define CT_1_PIN 36
+#define CT_2_PIN 39
 
 // MQTT
-AsyncMqttClient MQTT_client;
-Ticker MQTT_reconnect_timer;
 #define MQTT_BROKER_ADDRESS IPAddress(192, 168, 1, 2)
 #define MQTT_PORT 1883
-#define MQTT_POWER_STATUS_TOPIC "power/status"
-#define MQTT_DHT_STATUS_TOPIC "dht/bathroom/status"
+#define MQTT_STATUS_TOPIC "power/status"
+#define MQTT_LAST_WILL "{\"state\":\"disconnected\"}"
 #define MQTT_QOS 1
 #define MQTT_RETAIN true
 
-// Pin mapping
-#define CT_PIN A0
-#define DHT_PIN D2
+// WIFI
+#define WIFI_CONNECTION_TIMEOUT 5000
 
-// Power monitor
-EnergyMonitor emon1;
-#define POWER_READ_PERIOD 30000 // [ms] = 30 seconds
-#define POWER_PUBLISH_PERIOD 120000 // [ms] = 2 minutes
-#define MAINS_VOLTAGE 100.00 // [V]
-float apparent_power;
-long last_power_read_time, last_power_publish_time;
+// Web server
+#define WWW_PORT 80
+#define WS_PORT 8087
+
+// ADC reading
+#define SAMPLE_COUNT 2000.00
+#define FILTER_CONSTANT 0.001
+#define VCC 3.30
+#define ADC_MAX 4095.00
+#define BURDEN_VALUE 22.00
+#define CT_RATIO 2000.00
+
+// Timing
+#define WS_SEND_PERIOD 1000
+#define MQTT_PUBLISH_PERIOD 10000
 
 
-// DHT 
-DHT dht(DHT_PIN, DHT22);
-#define DHT_PUBLISH_PERIOD 300000 // [ms], 300000 is 5 minutes
-#define DHT_READ_PERIOD 10000 // [ms]
-long last_DHT_publish_time, last_DHT_read_time;
-float DHT_temperature = 0;
-float DHT_humidity = 0;
+class RmsCurrentMeasurement {
+  private:
+  
+    int sample_count;
+    float sum_of_squares;
+    float lpf;
+    
 
+    void computeLpf(float in){
+      this->lpf = (this->lpf)*(1.00 - FILTER_CONSTANT) + in * (FILTER_CONSTANT);
+    }
+
+    float computeHpf(float in){
+      // A High pass filter is just a signal minus its low pass filtered version
+      this->computeLpf(in);
+      return in - (this->lpf);
+    }
+    
+    float computeInstantaneousCurrent(float in){
+      return in * (CT_RATIO * VCC) / (ADC_MAX * BURDEN_VALUE);
+    }
+
+    void computeRms(float in){
+      // Increment sample counter
+      this->sample_count ++;
+
+      // Compute sum of squares
+      this->sum_of_squares = sum_of_squares + (in * in);
+
+      if(sample_count >= SAMPLE_COUNT-1) {
+
+        // Compute mean then square
+        this->RMS_current = sqrt(sum_of_squares / SAMPLE_COUNT);
+        
+        // reset everything
+        
+        this->sample_count = 0;
+        this->sum_of_squares = 0;
+      }
+    }
+    
+    
+  public:
+    float RMS_current;
+    
+    RmsCurrentMeasurement() {
+      
+      // initialize variables
+      this->RMS_current = 0;
+      this->sample_count = 0;
+      this->sum_of_squares = 0;
+      this->lpf = 0;
+    }
+    
+    void sample(int adc_pin) {
+      // Raw measurement from ADC, [0-4096], centered around about 1800
+      float ADC_reading = analogRead(adc_pin);
+
+      // Removing low frequency component from signal to get high frequency component
+      // i.e. remove constant offset
+      float hpf = this->computeHpf(ADC_reading);
+
+      // compute instantaneous current
+      float InstantaneousCurrent = this->computeInstantaneousCurrent(hpf);
+
+      // Compute RMS current
+      this->computeRms(InstantaneousCurrent);
+
+    }
+};
+
+WiFiClient wifi_client;
+PubSubClient MQTT_client(wifi_client);
+WebServer web_server(WWW_PORT);
+WebSocketsServer ws_server = WebSocketsServer(WS_PORT);
+
+RmsCurrentMeasurement phase_1_measurement;
+RmsCurrentMeasurement phase_2_measurement;
+
+int MQTT_submit_return = 0;
 
 void setup() {
   // Mandatory initial delay
@@ -64,19 +140,29 @@ void setup() {
   // Serial init
   Serial.begin(115200);
   Serial.println(); // Separate serial stream from initial gibberish
-  Serial.println(F(__FILE__ " " __DATE__ " " __TIME__));
-
-  emon1.current(CT_PIN, 111.1); // Current: input pin, calibration.
-  dht.begin();
+  Serial.println(F("Current consumption monitor"));
+  
   wifi_setup();
   MQTT_setup();
-  OTA_setup();
-
-  wifi_connect();
+  //ota_setup();
+  web_server_setup();
+  websocket_setup();
 }
 
 void loop() {
-  ArduinoOTA.handle();
-  DHT_read();
-  apparent_power_read();
+  wifi_connection_manager();
+  MQTT_connection_manager();
+  //ArduinoOTA.handle();
+  web_server.handleClient();
+  ws_server.loop();
+  
+  MQTT_client.loop();
+  
+  // conflict between measurements and mqtt
+  phase_1_measurement.sample(CT_1_PIN);
+  phase_2_measurement.sample(CT_2_PIN); 
+  
+  ws_send_periodically();
+  periodic_MQTT_publish();
+  
 }
