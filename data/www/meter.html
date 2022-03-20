@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Power monitor</title>
+    <link rel="stylesheet" href="meter.css">
+  </head>
+  <body>
+
+    <div id="power_container">
+      <div class="phase_power_container" id="phase_1_container"></div>
+      <div class="phase_power_container" id="phase_2_container"></div>
+    </div>
+
+    <script>
+
+      const ws_url = `ws://${window.location.hostname}:8087`
+      const websock = new WebSocket(ws_url)
+
+      console.log(`WS connecting to ${ws_url}`)
+
+      const phase_1_container = document.getElementById("phase_1_container")
+      const phase_2_container = document.getElementById("phase_2_container")
+      const max_current = 30.00
+
+      websock.onopen = (evt) => { console.log("websocket connected") }
+      websock.onclose = (evt) => { console.log("websocket closed") }
+      websock.onerror = (evt) => { console.error(evt) }
+
+      websock.onmessage = ( {data}) => {
+
+        const {
+          RMS_current_phase_1,
+          RMS_current_phase_2
+        } = JSON.parse(data)
+
+        phase_2_container.innerHTML = `Phase 2: ${RMS_current_phase_2}A`
+        phase_2_container.style.height = `${100* RMS_current_phase_2/max_current}%%`
+
+        phase_1_container.innerHTML = `Phase 1: ${RMS_current_phase_1}A`
+        phase_1_container.style.height = `${100* RMS_current_phase_1/max_current}%%`
+      }
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,44 @@
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #444444;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#power_container {
+
+    height: 80vh;
+    width: 50vw;
+    max-width: 400px;
+    border: 3px solid DimGrey;
+    padding: 2px;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.phase_power_container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    overflow:hidden;
+    transition: height 1s;
+}
+
+#phase_1_container {
+    background-color: #4286f4;
+}
+
+#phase_2_container {
+    background-color: #12ba77;
+}
+
+.graph_container {
+height:20vh;
+}

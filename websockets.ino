@@ -1,8 +1,8 @@
-void websocket_setup(){
+void ws_setup(){
   ws_server.begin();
 }
 
-void ws_send_periodically(){
+void periodic_ws_broadcast(){
   // Sending to websockets periodically
   static long last_ws_send_time;
   if(millis()- last_ws_send_time> WS_SEND_PERIOD){
