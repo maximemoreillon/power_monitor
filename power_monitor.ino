@@ -2,7 +2,7 @@
  * POWER MONITOR
  * Maxime MOREILLON
  * 
- * Board type: ESP32 DEv Board
+ * Board type: ESP32 Dev module
  * 
  */
 
@@ -22,11 +22,11 @@
 #define WS_PORT 8087
 
 // Timing
-#define MQTT_PUBLISH_PERIOD 10000
+#define MQTT_PUBLISH_PERIOD 60000
 #define WS_SEND_PERIOD 500
 
 
-IotKernel iot_kernel("power","0.1.1"); 
+IotKernel iot_kernel("power","0.1.2"); 
 
 RmsCurrentMeasurement phase_1_measurement;
 RmsCurrentMeasurement phase_2_measurement;
